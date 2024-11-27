@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import * as XLSX from "xlsx"; // You need to install 'xlsx' for Excel file parsing
 
 function FileViewer() {
   const navigate = useNavigate();
@@ -8,21 +9,67 @@ function FileViewer() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [fileName, setFileName] = useState("");
+  const [uploadedFiles, setUploadedFiles] = useState([]); // For storing all uploaded file names
 
   useEffect(() => {
     const storedData = localStorage.getItem("excelData");
     if (storedData) {
       setExcelData(JSON.parse(storedData));
     }
+    // Get the uploaded files from localStorage on initial load
+    const storedFiles = JSON.parse(localStorage.getItem("uploadedFiles")) || [];
+    setUploadedFiles(storedFiles);
   }, []);
 
   const handleReset = () => {
-    localStorage.removeItem("excelData");
-    localStorage.removeItem("orderdata");
-    setExcelData(null);
-    setSearchTerm("");
-    setFileName("");
-    navigate("/");
+    const confirmation = window.confirm(
+      "Are you sure you want to reset all data? This action cannot be undone."
+    );
+    if (confirmation) {
+      localStorage.removeItem("excelData");
+      localStorage.removeItem("uploadedFiles"); // Remove the list of uploaded files as well
+      setExcelData(null);
+      setUploadedFiles([]); // Clear uploaded files
+      setSearchTerm("");
+      setFileName("");
+      navigate("/");
+    }
+  };
+
+  const handleFileChange = (event) => {
+    const files = event.target.files;
+    if (files.length > 0) {
+      const file = files[0];
+      setFileName(file.name); // Set the file name
+
+      // Store the file name in the uploadedFiles array
+      setUploadedFiles((prevFiles) => {
+        const updatedFiles = [...prevFiles, file.name];
+        localStorage.setItem("uploadedFiles", JSON.stringify(updatedFiles)); // Persist in localStorage
+        return updatedFiles;
+      });
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const binaryStr = e.target.result;
+        const workbook = XLSX.read(binaryStr, { type: "binary" });
+
+        // Assuming the first sheet contains the data
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const newData = XLSX.utils.sheet_to_json(sheet);
+
+        // Append new data to existing excelData
+        setExcelData((prevData) => {
+          const updatedData = prevData ? [...prevData, ...newData] : newData;
+          localStorage.setItem("excelData", JSON.stringify(updatedData)); // Persist data in localStorage
+          return updatedData;
+        });
+
+        // Alert user after file is added
+        alert(`File "${file.name}" has been successfully added!`);
+      };
+      reader.readAsBinaryString(file);
+    }
   };
 
   const filteredData = excelData
@@ -38,7 +85,7 @@ function FileViewer() {
       <div className="flex justify-between items-center mb-6">
         {excelData && (
           <button
-            className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition duration-300 text-sm sm:text-base"
+            className="bg-red-500 text-white px-4 py-2 rounded-full hover:bg-red-600 transition duration-300 text-sm sm:text-base"
             onClick={handleReset}
           >
             Reset
@@ -91,7 +138,7 @@ function FileViewer() {
 
       {excelData && isMenuOpen && (
         <div
-          className={`fixed top-16 right-4 z-50 transition-transform duration-300 ease-in-out`}
+          className={`fixed mt-3 top-16 right-4 z-50 transition-transform duration-300 ease-in-out`}
         >
           <div className="bg-white shadow-lg p-4 rounded-lg w-48 sm:w-56">
             <div className="flex flex-col gap-4">
@@ -106,6 +153,12 @@ function FileViewer() {
                 onClick={() => navigate("/vieworder")}
               >
                 View Order
+              </button>
+              <button
+                className="bg-green-700 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg hover:bg-green-800 transition duration-300 transform hover:scale-105 shadow-lg text-sm sm:text-base"
+                onClick={() => document.getElementById("fileInput").click()}
+              >
+                Add File
               </button>
             </div>
           </div>
@@ -122,11 +175,7 @@ function FileViewer() {
         />
       </div>
 
-      {fileName && (
-        <p className="text-center text-sm sm:text-lg text-gray-700 mb-4">
-          File Uploaded: {fileName}
-        </p>
-      )}
+     
 
       {excelData && (
         <div className="overflow-x-auto mt-4">
@@ -149,9 +198,9 @@ function FileViewer() {
                       index % 2 === 0 ? "bg-gray-50" : "bg-white"
                     }`}
                   >
-                    {Object.keys(row).map((key, idx) => (
-                      <td key={idx} className="px-4 py-2">
-                        {key === "MSP" ? row[key].toFixed(2) : row[key]}
+                    {Object.keys(row).map((key) => (
+                      <td key={key} className="px-4 py-2 border-b">
+                        {row[key]}
                       </td>
                     ))}
                   </tr>
@@ -159,12 +208,18 @@ function FileViewer() {
               </tbody>
             </table>
           ) : (
-            <p className="text-center text-gray-600 mt-4">
-              No data found matching your search criteria.
-            </p>
+            <div className="text-center py-4 text-gray-500">No data to display.</div>
           )}
         </div>
       )}
+
+      <input
+        type="file"
+        id="fileInput"
+        className="hidden"
+        accept=".xlsx, .xls"
+        onChange={handleFileChange}
+      />
     </div>
   );
 }

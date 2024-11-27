@@ -7,6 +7,7 @@ const ShopForm = () => {
   const [shopName, setShopName] = useState("");
   const [item, setItem] = useState("");
   const [quantity, setQuantity] = useState("");
+  const [amount, setAmount] = useState(""); // New state for amount
   const [items, setItems] = useState([]);
   const [editIndex, setEditIndex] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -56,7 +57,7 @@ const ShopForm = () => {
       return;
     }
 
-    const newItem = { itemName: item, quantity };
+    const newItem = { itemName: item, quantity, amount };
     if (editIndex !== null) {
       const updatedItems = [...items];
       updatedItems[editIndex] = newItem;
@@ -68,6 +69,7 @@ const ShopForm = () => {
 
     setItem("");
     setQuantity("");
+    setAmount(""); // Clear amount input after adding
     setSearchTerm("");
   };
 
@@ -79,6 +81,7 @@ const ShopForm = () => {
     const itemToEdit = items[index];
     setItem(itemToEdit.itemName);
     setQuantity(itemToEdit.quantity);
+    setAmount(itemToEdit.amount || ""); // Set the amount if available
     setEditIndex(index);
   };
 
@@ -110,20 +113,20 @@ const ShopForm = () => {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Shop Name */}
           <div>
-            <label className="block text-lg font-semibold text-gray-700">Shop Name</label>
+            <label className="block text-lg font-semibold text-gray-700">Customer</label>
             <input
               type="text"
-              placeholder="Enter shop name"
+              placeholder="Enter customer name"
               value={shopName}
               onChange={(e) => setShopName(e.target.value)}
               className="w-full p-3 mt-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-600"
             />
           </div>
 
-          {/* Search Item, Quantity, and Add Button in a Row */}
-          <div className="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-4">
+          {/* Search Item, Quantity, Amount, and Add Button in a Row */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Search Item */}
-            <div className="w-full md:w-1/2 relative">
+            <div className="relative col-span-1 lg:col-span-2">
               <label className="block text-lg font-semibold text-gray-700">Search Item</label>
               <input
                 type="text"
@@ -148,7 +151,7 @@ const ShopForm = () => {
             </div>
 
             {/* Quantity */}
-            <div className="w-full md:w-1/4">
+            <div className="col-span-1 lg:col-span-1">
               <label className="block text-lg font-semibold text-gray-700">Quantity</label>
               <input
                 type="text"
@@ -159,16 +162,28 @@ const ShopForm = () => {
               />
             </div>
 
-            {/* Add Item Button */}
-            <div className="w-full md:w-1/4">
-              <button
-                type="button"
-                onClick={handleAddItem}
-                className="mt-7 px-6 py-2 w-full bg-gradient-to-r from-green-600 to-green-700 text-white font-bold rounded-lg shadow-md hover:scale-105 hover:shadow-lg transform transition-all"
-              >
-                {editIndex !== null ? "Save Item" : "Add Item +"}
-              </button>
+            {/* Amount (Optional) */}
+            <div className="col-span-1 lg:col-span-1">
+              <label className="block text-lg font-semibold text-gray-700">Amount (Optional)</label>
+              <input
+                type="text"
+                placeholder="Enter amount"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className="w-full p-3 mt-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-600"
+              />
             </div>
+          </div>
+
+          {/* Add Item Button */}
+          <div className="mt-4">
+            <button
+              type="button"
+              onClick={handleAddItem}
+              className="w-full px-6 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white font-bold rounded-lg shadow-md hover:scale-105 hover:shadow-lg transform transition-all"
+            >
+              {editIndex !== null ? "Save Item" : "Add Item +"}
+            </button>
           </div>
         </form>
 
@@ -180,6 +195,7 @@ const ShopForm = () => {
                 <tr>
                   <th className="px-6 py-3 text-left text-lg font-medium text-gray-700 border-b">Item Name</th>
                   <th className="px-6 py-3 text-left text-lg font-medium text-gray-700 border-b">Quantity</th>
+                  <th className="px-6 py-3 text-left text-lg font-medium text-gray-700 border-b">Amount</th>
                   <th className="px-6 py-3 text-left text-lg font-medium text-gray-700 border-b">Actions</th>
                 </tr>
               </thead>
@@ -188,6 +204,7 @@ const ShopForm = () => {
                   <tr key={index} className={`border-b ${index % 2 === 0 ? "bg-gray-50" : "bg-white"}`}>
                     <td className="px-6 py-3 text-gray-700">{item.itemName}</td>
                     <td className="px-6 py-3 text-gray-700">{item.quantity}</td>
+                    <td className="px-6 py-3 text-gray-700">{item.amount || "N/A"}</td>
                     <td className="px-6 py-3 space-x-3">
                       <button
                         onClick={() => handleDeleteItem(index)}
@@ -209,15 +226,15 @@ const ShopForm = () => {
           onClick={handleSubmit}
           className="mt-6 w-full px-6 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white font-bold rounded-lg shadow-md hover:scale-105 hover:shadow-lg transform transition-all"
         >
-          Submit
+          Submit Order
         </button>
 
-        {/* View Order Button */}
+        {/* View Orders Button */}
         <button
           onClick={() => navigate("/vieworder")}
           className="mt-6 px-6 py-2 w-full text-green-600 hover:text-green-800 font-semibold transition-all transform hover:scale-105"
         >
-          View Order
+          View Orders
         </button>
       </div>
     </div>
